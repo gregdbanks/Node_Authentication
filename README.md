@@ -1,10 +1,40 @@
 # Node_MVP :smiley:
 MVP Guide for authentication using json web tokens
 
-## What to Know?
+# What is JWT and why is it useful?
+
+JWT is useful for Authorization and Information exchange. Can be sent via URL/ Post request/HTTP Header which makes it fast for transmission and usable. It contains the details of user (not session id in cookies like traditional request), so no need to query database to get user details.
+
+
+# What to Know?
 You should know the basics of javascript and node, so this guide assumes both.
 
-## What NPM packages will we be using?
+# For this mvp we will be using MongoDB Atlas Cloud Database to store our users. 
+[For more info...](https://docs.atlas.mongodb.com/)
+
+<details>
+<summary>Instructions for MongoDB Atlas </summary>
+
+1. Visit [Official Docs](https://docs.atlas.mongodb.com/) , After signing up, click on `+ New Project`
+2. Name your project
+3. Click `Create Project`
+4. Click `Build a Database`
+5. Select FREE tier and click `Create`
+6. Choose a cloud provider, I chose AWS, but any will do
+7. Choose a region, any
+8. Scroll to the bottom and click `Create Cluster` (could take several minutes)
+9. Create a User, entering in a username and password and then clicking `Create User`
+10. Select where you would like to connect from, select local, and then click `Add My Current Ip Address`
+11. Click `Finish and Close` at the bottom of page
+12. In Database Deployments Click the `Connect` button next to your cluster name
+13. Click `Connect your application`, here is where you can get your connection string. :smile: 
+
+
+</details>
+
+---
+
+# What NPM packages will we be using?
 
 > [express](http://expressjs.com/)
 
@@ -30,38 +60,22 @@ Mongoose is an Object Data Modeling (ODM) library for MongoDB and Node.js. It ma
 
 A Node middleware for parsing request.body data (JSON).
 
-## 1. Setup an account at mongoDB Atlas. 
-[For more info...](https://docs.atlas.mongodb.com/)
+> [dotenv](https://www.npmjs.com/package/dotenv)
 
-1. After signing up, click on `+ New Project`
-2. Name your project
-3. Click `Create Project`
-4. Click `Build a Database`
-5. Select FREE tier and click `Create`
-6. Choose a cloud provider, I chose AWS, but any will do
-7. Choose a region, any
-8. Scroll to the bottom and click `Create Cluster` (could take several minutes)
-9. Create a User, entering in a username and password and then clicking `Create User`
-10. Select where you would like to connect from, select local, and then click `Add My Current Ip Address`
-11. Click `Finish and Close` at the bottom of page
-12. In Database Deployments Click the `Connect` button next to your cluster name
-13. Click `Connect your application`, here is where you can get your connection string. :smile: 
-Now, you have the mongoURI you are ready to connect my-authentication app to the database. Please follow the below steps.
+Dotenv is a zero-dependency module that loads environment variables from a .env file into process.env. Storing configuration in the environment separate from code is based on The Twelve-Factor App methodology.
 
----
-
-## 2. Initiate project
-1. Create a new folder call it `my-authentication`
-2. Pull up terminal/git bash, cd into `my-authentication`, and execute this statement below
+# Now lets get started and initiate our project
+1. Create a new folder call it 'my-authentication'
+2. Pull up terminal/git bash and execute this statement below
 ```
 npm init
 ```
-3. Npm init will ask basic info, fill out accordingly
-4. Install all packages mentioned previously
+3. npm init will ask basic info, fill out accordingly
+4. install all packages mentioned previously
 ```
-npm install express express-validator body-parser bcryptjs jsonwebtoken mongoose --save
+npm install express express-validator body-parser bcryptjs jsonwebtoken mongoose dotenv --save
 ```
-5. Now create a file 'index.js' at the root of your project adding this code:
+5. Now create a file 'index.js' at the route adding this code:
 ```js
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -85,13 +99,37 @@ app.listen(PORT, (req, res) => {
 node index.js
 ```
 
-Congratulation you have successfully setup and initialized a node app :rocket: 
+### :rocket:  Congratulation you have successfully setup and initialized a node app
 
-## 3. Make first model
-1. Create folder called `model`
-2. Inside model create file called `User.js` (must capitalize)
-3. Add this code to `User.js`, here we are using mongoose for our schema and this will allow us to save a user to our database.
+# Configure User Model
+1. Create `.env` file at the root of your app, here is where you will store your connection string you recieved earlier doing the mongoDB Atlas section. Inside the `.env` file add this as well as your connection string:
+```
+DB_URI=yourSecretConnectionStringGoesHere
+```
+2. Create a `config` folder and inside create a `db.js`, add code below
+```js
+const mongoose = require("mongoose");
+require('dotenv').config()
 
+// Replace this with your MONGOURI.
+const MONGOURI = process.env.DB_URI;
+
+const InitiateMongoServer = async () => {
+  try {
+    await mongoose.connect(MONGOURI, {
+      useNewUrlParser: true
+    });
+    console.log("Connected to DB !!");
+  } catch (e) {
+    console.log(e);
+    throw e;
+  }
+};
+
+module.exports = InitiateMongoServer;
+```
+3. Test by running`node index.js` in your terminal, expect server to connect
+4. Creat a `model` folder and inside create a `User.js` (Capitalized), add code below
 ```js
 const mongoose = require("mongoose");
 
@@ -117,35 +155,8 @@ const UserSchema = mongoose.Schema({
 // export model user with UserSchema
 module.exports = mongoose.model("user", UserSchema);
 ```
-
-## 4. Make Config for DB info
-1. Create a new folder call it `config` and add a file naming it `db.js`
-2. Add this code to `db.js`
-
-```js
-const mongoose = require("mongoose");
-
-// Replace this with your MONGOURI. ** Do not push this to a public repo, use environment variables to hide sensitive info, such as connection strings
-const MONGOURI = "mongodb://testuser:testpassword@ds257698.mlab.com:57698/node-auth";
-
-const InitiateMongoServer = async () => {
-  try {
-    await mongoose.connect(MONGOURI, {
-      useNewUrlParser: true
-    });
-    console.log("Connected to DB !!");
-  } catch (e) {
-    console.log(e);
-    throw e;
-  }
-};
-
-module.exports = InitiateMongoServer;
-```
-
-3. Update your `index.js` to connect api to DB.
-
-```js
+5. Update `index.js` adding code below
+```js 
 const express = require("express");
 const bodyParser = require("body-parser");
 const InitiateMongoServer = require("./config/db");
@@ -171,7 +182,7 @@ app.listen(PORT, (req, res) => {
 });
 ```
 
-Congratulation you have successfully made your first model and configured your database connection :rocket: 
+# Make Route for user signup
 
 <!-- <details>
 <summary>File Structure</summary>
