@@ -1,5 +1,5 @@
 # Node_MVP :smiley:
-MVP Guide for authentication using json web tokens
+Guide for authentication using json web tokens
 
 # What is JWT and why is it useful?
 
@@ -9,8 +9,7 @@ JWT is useful for Authorization and Information exchange. Can be sent via URL/ P
 # What to Know?
 You should know the basics of javascript and node, so this guide assumes both.
 
-# For this mvp we will be using MongoDB Atlas Cloud Database to store our users. 
-[For more info...](https://docs.atlas.mongodb.com/)
+We will be using MongoDB Atlas Cloud Database to store our users. [For more info...](https://docs.atlas.mongodb.com/)
 
 <details>
 <summary>Instructions for MongoDB Atlas </summary>
@@ -34,7 +33,8 @@ You should know the basics of javascript and node, so this guide assumes both.
 
 ---
 
-# What NPM packages will we be using?
+<details>
+<summary>What NPM packages will we be using?</summary>
 
 > [express](http://expressjs.com/)
 
@@ -63,6 +63,8 @@ A Node middleware for parsing request.body data (JSON).
 > [dotenv](https://www.npmjs.com/package/dotenv)
 
 Dotenv is a zero-dependency module that loads environment variables from a .env file into process.env. Storing configuration in the environment separate from code is based on The Twelve-Factor App methodology.
+
+</details>
 
 # Now lets get started and initiate our project
 1. Create a new folder call it 'my-authentication'
@@ -99,7 +101,7 @@ app.listen(PORT, (req, res) => {
 node index.js
 ```
 
-### :rocket:  Congratulation you have successfully setup and initialized a node app
+### :rocket: - Congratulation you have successfully setup and initialized a node app
 
 # Configure User Model
 1. Create `.env` file at the root of your app, here is where you will store your connection string you recieved earlier doing the mongoDB Atlas section. Inside the `.env` file add this as well as your connection string:
@@ -129,7 +131,7 @@ const InitiateMongoServer = async () => {
 module.exports = InitiateMongoServer;
 ```
 3. Test by running`node index.js` in your terminal, expect server to connect
-4. Creat a `model` folder and inside create a `User.js` (Capitalized), add code below
+4. Create a `model` folder and inside create a `User.js` (Capitalized), add code below
 ```js
 const mongoose = require("mongoose");
 
@@ -182,7 +184,137 @@ app.listen(PORT, (req, res) => {
 });
 ```
 
-# Make Route for user signup
+# Make Route for user signup. 
+If new to routing click [here](https://expressjs.com/en/starter/basic-routing.html) to learn basics
+
+1. Create a `routes` folder and inside create a `user.js` file. Add code below
+```js
+const express = require("express");
+const { check, validationResult} = require("express-validator/check");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const router = express.Router();
+
+const User = require("../model/User");
+
+/**
+ * @method - POST
+ * @param - /signup
+ * @description - User SignUp
+ */
+
+router.post(
+    "/signup",
+    [
+        check("username", "Please Enter a Valid Username")
+        .not()
+        .isEmpty(),
+        check("email", "Please enter a valid email").isEmail(),
+        check("password", "Please enter a valid password").isLength({
+            min: 6
+        })
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                errors: errors.array()
+            });
+        }
+
+        const {
+            username,
+            email,
+            password
+        } = req.body;
+        try {
+            let user = await User.findOne({
+                email
+            });
+            if (user) {
+                return res.status(400).json({
+                    msg: "User Already Exists"
+                });
+            }
+
+            user = new User({
+                username,
+                email,
+                password
+            });
+
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(password, salt);
+
+            await user.save();
+
+            const payload = {
+                user: {
+                    id: user.id
+                }
+            };
+
+            jwt.sign(
+                payload,
+                "randomString", {
+                    expiresIn: 10000
+                },
+                (err, token) => {
+                    if (err) throw err;
+                    res.status(200).json({
+                        token
+                    });
+                }
+            );
+        } catch (err) {
+            console.log(err.message);
+            res.status(500).send("Error in Saving");
+        }
+    }
+);
+
+module.exports = router;
+
+```
+
+2. Import in `index.js` like below
+```js
+const express = require("express");
+const bodyParser = require("body-parser");
+const user = require("./routes/user"); //new addition
+const InitiateMongoServer = require("./config/db");
+
+// Initiate Mongo Server
+InitiateMongoServer();
+
+const app = express();
+
+// PORT
+const PORT = process.env.PORT || 4000;
+
+// Middleware
+app.use(bodyParser.json());
+
+app.get("/", (req, res) => {
+  res.json({ message: "API Working" });
+});
+
+
+/**
+ * Router Middleware
+ * Router - /user/*
+ * Method - *
+ */
+app.use("/user", user);
+
+app.listen(PORT, (req, res) => {
+  console.log(`Server Started at PORT ${PORT}`);
+});
+```
+
+3. Test using postman. If you dont have postman, click [here](https://learning.postman.com/docs/getting-started/installation-and-updates/) to install and setup. Expect results below.
+
+![postman](./images/postman.png)
 
 <!-- <details>
 <summary>File Structure</summary>
