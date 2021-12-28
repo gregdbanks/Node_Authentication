@@ -420,4 +420,4 @@ This function will be used to verify the users token
 
 # :tada: Congratulations, You have successfully created an authentication API! 
 
-
+You have completed the backend portion to your MERN app. Now lets make a frontend UI using React, click here for second part.
