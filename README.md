@@ -1,9 +1,9 @@
 # Node_MVP :smiley:
-Guide for authentication using json web tokens
+Guide for making authentication API utilizing json web tokens
 
 # What is JWT and why is it useful?
 
-JWT is useful for Authorization and Information exchange. Can be sent via URL/ Post request/HTTP Header which makes it fast for transmission and usable. It contains the details of user (not session id in cookies like traditional request), so no need to query database to get user details.
+JWT is useful for Authorization and Information exchange. Can be sent via URL/ Post request/HTTP Header which makes it fast for transmission and usable. It contains the details of user (not session id in cookies like traditional request) so , :drum: :drum: :drum: , NO need to query database to get user details.
 
 
 # What to Know?
@@ -184,7 +184,7 @@ app.listen(PORT, (req, res) => {
 });
 ```
 
-# Make Route for user signup. 
+# Make Route for User signup. 
 If new to routing click [here](https://expressjs.com/en/starter/basic-routing.html) to learn basics
 
 1. Create a `routes` folder and inside create a `user.js` file. Add code below
@@ -196,12 +196,6 @@ const jwt = require("jsonwebtoken");
 const router = express.Router();
 
 const User = require("../model/User");
-
-/**
- * @method - POST
- * @param - /signup
- * @description - User SignUp
- */
 
 router.post(
     "/signup",
@@ -312,35 +306,118 @@ app.listen(PORT, (req, res) => {
 });
 ```
 
-3. Test using postman. If you dont have postman, click [here](https://learning.postman.com/docs/getting-started/installation-and-updates/) to install and setup. Expect results below.
+3. Test using postman. If you don't have postman, click [here](https://learning.postman.com/docs/getting-started/installation-and-updates/) to install and setup. Expect results below.
 
 ![postman](./images/postman.png)
 
-<!-- <details>
-<summary>File Structure</summary>
+# Make Route for User login. 
 
+1. Add code below to `user.js`
+```js
+router.post(
+  "/login",
+  [
+    check("email", "Please enter a valid email").isEmail(),
+    check("password", "Please enter a valid password").isLength({
+      min: 6
+    })
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        errors: errors.array()
+      });
+    }
+
+    const { email, password } = req.body;
+    try {
+      let user = await User.findOne({
+        email
+      });
+      if (!user)
+        return res.status(400).json({
+          message: "User Not Exist"
+        });
+
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch)
+        return res.status(400).json({
+          message: "Incorrect Password !"
+        });
+
+      const payload = {
+        user: {
+          id: user.id
+        }
+      };
+
+      jwt.sign(
+        payload,
+        "randomString",
+        {
+          expiresIn: 3600
+        },
+        (err, token) => {
+          if (err) throw err;
+          res.status(200).json({
+            token
+          });
+        }
+      );
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        message: "Server Error"
+      });
+    }
+  }
+);
 ```
-config /
-    db.js
-middleware /
-    auth.js
-model /
-    User.js
-routes /
-    user.js
--index.js-
+
+3. Test using postman.
+
+# Make Route to Get User. 
+
+1. We get tokens back from both user signup and user login, now lets add route to get a user via token. Add code below.
+```js
+router.get("/me", auth, async (req, res) => {
+  try {
+    // request.user is getting fetched from Middleware after token authentication
+    const user = await User.findById(req.user.id);
+    res.json(user);
+  } catch (e) {
+    res.send({ message: "Error in Fetching user" });
+  }
+});
 ```
+If you run the server you will get an error from the auth parameter so lets make that function. 
 
-`config / db.js`: A command-line utility that lets you interact with this Django project in various ways. 
+2. Create a `middleware` folder and inside create a `auth.js` adding the code below.
+```js
+const jwt = require("jsonwebtoken");
 
-`middleware / auth.js`: A command-line utility that lets you interact with this Django project in various ways. 
+module.exports = function(req, res, next) {
+  const token = req.header("token");
+  if (!token) return res.status(401).json({ message: "Auth Error" });
 
-`model / User.js`: A command-line utility that lets you interact with this Django project in various ways. 
+  try {
+    const decoded = jwt.verify(token, "randomString");
+    req.user = decoded.user;
+    next();
+  } catch (e) {
+    console.error(e);
+    res.status(500).send({ message: "Invalid Token" });
+  }
+};
+```
+This function will be used to verify the users token
 
-`routes / user.js`: This is where we import express and bodparser. 
+3. Test using postman. After signing up a user, try getting that same user passing the token you got from signup to the request header
 
-`index.js`: This is where we import express and bodparser. 
+![token](./images/getToken.png)
 
-</details>
+# :tada: Congratulations, You have successfully created an authentication API! 
 
---- -->
+
