@@ -1,6 +1,8 @@
 # Node_MVP :smiley:
 Guide for making authentication API utilizing json web tokens
 
+[Click here ](https://nodejs.dev/learn/how-to-install-nodejs) if you dont have node installed
+
 # What is JWT and why is it useful?
 
 JWT is useful for Authorization and Information exchange. Can be sent via URL/ Post request/HTTP Header which makes it fast for transmission and usable. It contains the details of user (not session id in cookies like traditional request) so , :drum: :drum: :drum: , NO need to query database to get user details.
