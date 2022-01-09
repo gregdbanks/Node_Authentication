@@ -386,6 +386,10 @@ router.post(
 17. We get tokens back from both user signup and user login, now lets add route to get a user via token. Add code below.
 
 ```js
+const auth = require("../middleware/auth");
+```
+
+```js
 router.get("/me", auth, async (req, res) => {
   try {
     // request.user is getting fetched from Middleware after token authentication
@@ -427,4 +431,4 @@ This function will be used to verify the users token
 
 # :tada: Congratulations, You have successfully created an authentication API!
 
-You have completed the backend portion to your MERN app. Now lets make a frontend UI using React, click here for second part.
+You have completed the backend portion to your MERN app. Now lets make a frontend UI using React, click here for [second part](https://github.com/gregdbanks/MERN_Authentication).
