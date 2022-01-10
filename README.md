@@ -273,7 +273,7 @@ module.exports = router;
 
 This will be a post request using [express-validator](https://express-validator.github.io/docs/) for our signup form validation, [bcrypt](https://www.npmjs.com/package/bcrypt) to hash our users password, and [jsonwebtoken](https://jwt.io/) to encrypt our payload.
 
-13. Import in `index.js` like below
+13. Import in `index.js` like below and middleware to handles CORs
 
 ```js
 const express = require("express");
@@ -288,6 +288,19 @@ const app = express();
 
 // PORT
 const PORT = process.env.PORT || 4000;
+
+// Middleware
+app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "http://localhost:3000"); // update to match the domain you will make the request from
+  res.header(
+    "Access-Control-Allow-Headers",
+    "token, Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next();
+});
 
 // Middleware
 app.use(bodyParser.json());
