@@ -48,8 +48,6 @@ We will be using MongoDB Atlas Cloud Database to store our users. [For more info
 
 - [mongoose](https://mongoosejs.com/docs/)
 
-- [body-parser](https://www.npmjs.com/package/body-parser)
-
 - [dotenv](https://www.npmjs.com/package/dotenv)
 
 # Initiate your project
@@ -65,7 +63,7 @@ npm init
 4. Install all packages mentioned previously
 
 ```
-npm install express express-validator body-parser bcryptjs jsonwebtoken mongoose dotenv --save
+npm install express express-validator bcryptjs jsonwebtoken mongoose dotenv --save
 ```
 
 5. Now create a file 'index.js' at the root adding this code
@@ -125,6 +123,8 @@ const InitiateMongoServer = async () => {
 
 module.exports = InitiateMongoServer;
 ```
+
+> Notice InitiateMongoServer is an `async` funtion, We will be using [async await](https://javascript.info/async-await) to work with promises. The word `async` before a function means one simple thing: a function always returns a promise. Other values are wrapped in a resolved promise automatically.
 
 9. Test by running`node index.js` in your terminal, expect server to connect
 10. Create a `model` folder and inside create a `User.js` (Capitalized), add code below
@@ -442,6 +442,133 @@ This function will be used to verify the users token
 
 ![token](./images/getToken.png)
 
-# :tada: Congratulations, You have successfully created an authentication API!
+# Make Controller file for user routes and clean up routes file
 
-You have completed the backend portion to your MERN app. Now lets make a frontend UI using React, click here for [second part](https://github.com/gregdbanks/MERN_Authentication).
+20. Create a `controllers` folder and add user.js, add route logic
+
+```js
+const { validationResult } = require("express-validator");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
+const User = require("../model/User");
+
+exports.signUp = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array(),
+    });
+  }
+
+  const { username, email, password } = req.body;
+  try {
+    let user = await User.findOne({
+      email,
+    });
+    if (user) {
+      return res.status(400).json({
+        msg: "User Already Exists",
+      });
+    }
+
+    user = new User({
+      username,
+      email,
+      password,
+    });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+
+    await user.save();
+
+    const payload = {
+      user: {
+        id: user.id,
+      },
+    };
+
+    jwt.sign(
+      payload,
+      "randomString",
+      {
+        expiresIn: 10000,
+      },
+      (err, token) => {
+        if (err) throw err;
+        res.status(200).json({
+          token,
+        });
+      }
+    );
+  } catch (err) {
+    console.log(err.message);
+    res.status(500).send("Error in Saving");
+  }
+};
+
+exports.loginUser = async (req, res) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array(),
+    });
+  }
+
+  const { email, password } = req.body;
+  try {
+    let user = await User.findOne({
+      email,
+    });
+    if (!user)
+      return res.status(400).json({
+        message: "User Not Exist",
+      });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({
+        message: "Incorrect Password !",
+      });
+
+    const payload = {
+      user: {
+        id: user.id,
+      },
+    };
+
+    jwt.sign(
+      payload,
+      "randomString",
+      {
+        expiresIn: 3600,
+      },
+      (err, token) => {
+        if (err) throw err;
+        res.status(200).json({
+          token,
+        });
+      }
+    );
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      message: "Server Error",
+    });
+  }
+};
+
+exports.getMe = async (req, res) => {
+  try {
+    // request.user is getting fetched from Middleware after token authentication
+    const user = await User.findById(req.user.id);
+    res.json(user);
+  } catch (e) {
+    res.send({ message: "Error in Fetching user" });
+  }
+};
+```
+
+That wraps up this instructional on making an authentication API using Node, Now lets make a frontend UI using React, click here for [second part](https://github.com/gregdbanks/MERN_Authentication).
