@@ -124,7 +124,7 @@ const InitiateMongoServer = async () => {
 module.exports = InitiateMongoServer;
 ```
 
-> Notice InitiateMongoServer is an `async` funtion, We will be using [async await](https://javascript.info/async-await) to work with promises. The word `async` before a function means one simple thing: a function always returns a promise. Other values are wrapped in a resolved promise automatically.
+> Notice InitiateMongoServer is an `async` function, We will be using [async await](https://javascript.info/async-await) to work with promises. The word `async` before a function means one simple thing: a function always returns a promise. Other values are wrapped in a resolved promise automatically.
 
 9. Test by running`node index.js` in your terminal, expect server to connect
 10. Create a `model` folder and inside create a `User.js` (Capitalized), add code below
