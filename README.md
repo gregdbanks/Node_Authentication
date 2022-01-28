@@ -1,6 +1,6 @@
-# My_Authentication :smiley:
+# Node_Authentication :smiley:
 
-Guide for making authentication API utilizing json web tokens
+Guide for making a production ready authentication API utilizing json web tokens [JWT](https://jwt.io/)
 
 # System Requirements
 
@@ -66,7 +66,7 @@ npm init
 npm install express express-validator bcryptjs jsonwebtoken mongoose dotenv --save
 ```
 
-5. Now create a file 'index.js' at the root adding this code
+5. Now create a file `index.js` at the root adding this code
 
 ```js
 const express = require("express");
@@ -444,6 +444,8 @@ This function will be used to verify the users token
 
 # Make Controller file for user routes and clean up routes file
 
+This folder will help us when we add more routes to this API keeping our route files shorter and more manageable
+
 20. Create a `controllers` folder and add user.js, add route logic
 
 ```js
@@ -609,5 +611,200 @@ router.get("/me", auth, getMe);
 
 module.exports = router;
 ```
+
+# Lets make a middleware function to clean up all of our try catch statements in our controller file, and handle our errors
+
+22. Add file to middleware naming it `asyncHandler.js` adding code below
+
+```js
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+module.exports = asyncHandler;
+```
+
+23. Update controller file by removing all try catches and wrapping methods in asyncHandler like below
+
+```js
+const { validationResult } = require("express-validator");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const asyncHandler = require("../middleware/asyncHandler");
+
+const User = require("../model/User");
+
+exports.signUp = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array(),
+    });
+  }
+
+  const { username, email, password } = req.body;
+
+  let user = await User.findOne({
+    email,
+  });
+  if (user) {
+    return res.status(400).json({
+      msg: "User Already Exists",
+    });
+  }
+
+  user = new User({
+    username,
+    email,
+    password,
+  });
+
+  const salt = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(password, salt);
+
+  await user.save();
+
+  const payload = {
+    user: {
+      id: user.id,
+    },
+  };
+
+  jwt.sign(
+    payload,
+    "randomString",
+    {
+      expiresIn: 10000,
+    },
+    (err, token) => {
+      if (err) throw err;
+      res.status(200).json({
+        token,
+      });
+    }
+  );
+
+  console.log(err.message);
+  res.status(500).send("Error in Saving");
+});
+
+exports.loginUser = asyncHandler(async (req, res) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array(),
+    });
+  }
+
+  const { email, password } = req.body;
+
+  let user = await User.findOne({
+    email,
+  });
+  if (!user)
+    return res.status(400).json({
+      message: "User Not Exist",
+    });
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch)
+    return res.status(400).json({
+      message: "Incorrect Password !",
+    });
+
+  const payload = {
+    user: {
+      id: user.id,
+    },
+  };
+
+  jwt.sign(
+    payload,
+    "randomString",
+    {
+      expiresIn: 3600,
+    },
+    (err, token) => {
+      if (err) throw err;
+      res.status(200).json({
+        token,
+      });
+    }
+  );
+
+  console.error(e);
+  res.status(500).json({
+    message: "Server Error",
+  });
+});
+
+exports.getMe = asyncHandler(async (req, res) => {
+  // request.user is getting fetched from Middleware after token authentication
+  const user = await User.findById(req.user.id);
+  res.json(user);
+
+  res.send({ message: "Error in Fetching user" });
+});
+```
+
+This makes our code a little bit easier to read
+
+24. Make `utils` folder, add `errorClass.js`
+
+```js
+class ErrorClass extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
+module.exports = ErrorClass;
+```
+
+This is for our custom error response. allowing us to pass a status code and message as our argument
+
+25. Add `error.js` to middleware folder adding this code
+
+```js
+const ErrorClass = require("../utils/errorClass");
+
+const errorHandler = (err, req, res, next) => {
+  let error = { ...err };
+
+  error.message = err.message;
+
+  // Log to console for dev
+  console.log(err);
+
+  // Mongoose bad ObjectId
+  if (err.name === "CastError") {
+    const message = `Resource not found`;
+    error = new ErrorClass(message, 404);
+  }
+
+  // Mongoose duplicate key
+  if (err.code === 11000) {
+    const message = "Duplicate field value entered";
+    error = new ErrorClass(message, 400);
+  }
+
+  // Mongoose validation error
+  if (err.name === "ValidationError") {
+    console.log(err.name);
+    const message = Object.values(err.errors).map((val) => val.message);
+    error = new ErrorClass(message, 400);
+  }
+
+  res.status(error.statusCode || 500).json({
+    success: false,
+    error: error.message || "Server Error",
+  });
+};
+
+module.exports = errorHandler;
+```
+
+This is where we can customize error responses.
 
 That wraps up this instructional on making an authentication API using Node, Now lets make a frontend UI using React, click here for [second part](https://github.com/gregdbanks/MERN_Authentication).
