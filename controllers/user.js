@@ -8,9 +8,7 @@ const User = require("../model/User");
 exports.signUp = asyncHandler(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      errors: errors.array(),
-    });
+    return next(new ErrorClass("Issue Signing Up", 400));
   }
 
   const { username, email, password } = req.body;
