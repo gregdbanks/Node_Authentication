@@ -19,6 +19,8 @@
   "homepage": "https://github.com/gregdbanks/Node_Authentication#readme",
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "colors": "^1.4.0",
+    "cookie-parser": "^1.4.6",
     "dotenv": "^14.3.2",
     "express": "^4.17.2",
     "express-validator": "^6.14.0",

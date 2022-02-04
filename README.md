@@ -70,7 +70,6 @@ npm install express express-validator bcryptjs jsonwebtoken mongoose dotenv --sa
 
 ```js
 const express = require("express");
-const bodyParser = require("body-parser");
 
 const app = express();
 
@@ -99,6 +98,8 @@ node index.js
 ```
 DB_URI=yourSecretConnectionStringGoesHere
 ```
+
+Warning, if your connection string password has special characters you will need it encoded for more info you can get the encoded version of your password [here](https://www.w3schools.com/html/html_urlencode.asp) by entering it in the `Try It Yourself` input.
 
 8. Create a `config` folder and inside create a `db.js`, add code below
 
@@ -181,6 +182,8 @@ app.listen(PORT, (req, res) => {
   console.log(`Server Started at PORT ${PORT}`);
 });
 ```
+
+> Notice we add [body-parser](https://www.npmjs.com/package/body-parser) which we will use to parse incoming request bodies.
 
 # Make Route for User signup
 
@@ -612,7 +615,7 @@ router.get("/me", auth, getMe);
 module.exports = router;
 ```
 
-# Lets make a middleware function to clean up all of our try catch statements in our controller file, and handle our errors
+<!-- # Lets make a middleware function to clean up all of our try catch statements in our controller file, and handle our errors
 
 22. Add file to middleware naming it `asyncHandler.js` adding code below
 
@@ -747,9 +750,9 @@ exports.getMe = asyncHandler(async (req, res) => {
 });
 ```
 
-This makes our code a little bit easier to read
+This makes our code a little bit easier to read -->
 
-24. Make `utils` folder, add `errorClass.js`
+<!-- 24. Make `utils` folder, add `errorClass.js`
 
 ```js
 class ErrorClass extends Error {
@@ -805,6 +808,6 @@ const errorHandler = (err, req, res, next) => {
 module.exports = errorHandler;
 ```
 
-This is where we can customize error responses.
+This is where we can customize error responses. -->
 
 That wraps up this instructional on making an authentication API using Node, Now lets make a frontend UI using React, click here for [second part](https://github.com/gregdbanks/MERN_Authentication).

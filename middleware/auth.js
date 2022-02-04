@@ -1,15 +1,39 @@
 const jwt = require("jsonwebtoken");
+const asyncHandler = require("./asyncHandler");
+const ErrorClass = require("../utils/errorClass");
+const User = require("../model/User");
 
-module.exports = function(req, res, next) {
-  const token = req.header("token");
-  if (!token) return res.status(401).json({ message: "Auth Error" });
+exports.protect = asyncHandler(async (req, res, next) => {
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    // Set token from Bearer token in header
+    token = req.headers.authorization.split(" ")[1];
+    // Set token from cookie
+  } else if (req.cookies.token) {
+    token = req.cookies.token;
+  }
+
+  // Make sure token exists
+  if (!token) {
+    return next(new ErrorClass("Not authorized to access this route", 401));
+  }
 
   try {
-    const decoded = jwt.verify(token, "randomString");
-    req.user = decoded.user;
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    req.user = await User.findById(decoded.id);
+
     next();
-  } catch (e) {
-    console.error(e);
-    res.status(500).send({ message: "Invalid Token" });
+  } catch (err) {
+    return next(new ErrorClass("Not authorized to access this route", 401));
   }
-};
+});
+
+// Cand.BH Assessment Mod. 21+
+// CASSEMNT
+// CCRISIS
